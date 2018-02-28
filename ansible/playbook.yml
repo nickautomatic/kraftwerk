@@ -1,0 +1,138 @@
+---
+- hosts: all
+  remote_user: vagrant
+  become: yes
+  become_method: sudo
+
+  vars:
+    db_database: craft
+    db_password: 123
+    php_version: 7.0
+
+  tasks:
+  - name: Install Aptitude
+    apt: name={{item}} state=latest update_cache=yes
+    with_items:
+    - aptitude
+
+  - name: Update apt packages
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+
+  - name: Install other tools
+    apt: name={{item}} state=latest update_cache=yes
+    with_items:
+    - unzip
+    - zip
+
+  - name: Install Apache
+    apt: name={{item}} state=latest update_cache=yes
+    with_items:
+    - apache2
+    - libapache2-mod-php
+
+  - name: Configure Apache modules
+    apache2_module:
+      name: rewrite
+      state: present
+
+  - name: Configure Apache virtual host
+    copy:
+      dest: /etc/apache2/sites-available/vagrant_webroot.conf
+      src: /vagrant/ansible/files/vagrant_webroot.conf
+
+  - name: Enable Apache virtual host
+    file:
+      path: /etc/apache2/sites-enabled/vagrant_webroot.conf
+      src: /etc/apache2/sites-available/vagrant_webroot.conf
+      state: link
+      force: yes
+    notify:
+      - restart apache
+
+  - name: Make sure Apache is started
+    service:
+      name: apache2
+      state: started
+
+  - name: Install PHP
+    apt: name={{item}} state=latest update_cache=yes
+    with_items:
+    - imagemagick
+    - php-imagick
+    - php{{ php_version }}
+    - php{{ php_version }}-curl
+    - php{{ php_version }}-intl
+    - php{{ php_version }}-mbstring
+    - php{{ php_version }}-mysql
+    - php{{ php_version }}-xml
+    - php{{ php_version }}-zip
+    notify:
+      - restart apache
+
+  - name: Install Composer
+    script: scripts/install_composer.sh
+    args:
+      creates: /usr/local/bin/composer
+
+  - name: Make Composer available globally
+    command: mv composer.phar /usr/local/bin/composer
+    args:
+      creates: /usr/local/bin/composer
+
+  - name: Install Craft's dependencies
+    composer:
+      command: install
+      working_dir: /vagrant
+
+  - name: Create local .env file
+    copy:
+      dest: /vagrant/.env
+      src: /vagrant/.env.example
+      force: no
+
+  - name: Set local config for Craft
+    lineinfile:
+      dest: /vagrant/.env
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+      state: absent
+    with_items:
+      - { regexp: '^DB_DATABASE=""$', line: 'DB_DATABASE="{{ db_database }}"' }
+      - { regexp: '^DB_PASSWORD=""$', line: 'DB_PASSWORD="{{ db_password }}"' }
+
+  - name: Check whether Craft's security key has been set
+    command: awk /^SECURITY_KEY=\"\"/ /vagrant/.env
+    register: security_key_has_been_set
+    changed_when: security_key_has_been_set.stdout != ""
+
+  - name: Set security key for Craft
+    command: /vagrant/craft setup/security-key --interactive=0
+    when: security_key_has_been_set.stdout != ""
+
+  - name: Install MySQL
+    apt: name={{item}} state=latest update_cache=yes
+    with_items:
+    - mysql-server
+    - php-mysql
+    - python-mysqldb
+    notify:
+      - restart apache
+
+  - name: Create MySQL user for Craft
+    mysql_user:
+      name: root
+      password: "{{ db_password }}"
+      priv: '*.*:ALL'
+      state: present
+
+  - name: Create MySQL DB for Craft
+    mysql_db:
+      login_password: "{{ db_password }}"
+      name: "{{ db_database }}"
+      state: present
+
+  handlers:
+    - name: restart apache
+      service: name=apache2 state=restarted

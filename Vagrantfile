@@ -39,4 +39,11 @@ Vagrant.configure("2") do |config|
       group: "www-data",
       nfs: true
   end
+
+  # Provision the Vagrant VM:
+  # (Vagrant will install Ansible if necessary)
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.playbook = "ansible/playbook.yml"
+    ansible.compatibility_mode = "2.0"
+  end
 end
