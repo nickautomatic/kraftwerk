@@ -46,4 +46,9 @@ Vagrant.configure("2") do |config|
     ansible.playbook = "ansible/playbook.yml"
     ansible.compatibility_mode = "2.0"
   end
+
+  config.vm.provision "shell", privileged: false, inline: <<-EOF
+    echo "Vagrant Box provisioned!"
+    echo "Now install Craft at http://localhost:8080/admin/install"
+  EOF
 end
