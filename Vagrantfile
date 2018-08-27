@@ -47,6 +47,11 @@ Vagrant.configure("2") do |config|
     ansible.compatibility_mode = "2.0"
   end
 
+  # Restore a DB backup:
+  config.vm.provision "db_restore", type: "shell", run: "once" do |shell|
+    shell.path = "ansible/scripts/db_restore.sh"
+  end
+
   config.vm.provision "shell", privileged: false, inline: <<-EOF
     echo "Vagrant Box provisioned!"
     echo "Now install Craft at http://localhost:8080/admin/install"
