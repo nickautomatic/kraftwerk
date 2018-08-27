@@ -29,16 +29,9 @@ Vagrant.configure("2") do |config|
   config.vm.network "private_network", type: "dhcp"
 
   # Set the synced folder:
-  if host =~ /mswin|mingw|cygwin/
-    config.vm.synced_folder ".", "/vagrant",
-      owner: "www-data",
-      group: "www-data"
-  else
-    config.vm.synced_folder ".", "/vagrant",
-      owner: "www-data",
-      group: "www-data",
-      nfs: true
-  end
+  config.vm.synced_folder ".", "/vagrant",
+    owner: "www-data",
+    group: "www-data"
 
   # Provision the Vagrant VM:
   # (Vagrant will install Ansible if necessary)
