@@ -1,3 +1,11 @@
+> [!IMPORTANT]
+> This project is now archived. Its purpose was to provide a convenient
+> development environment for Craft CMS projects, but since Craft now have
+> an [official recommendation][1] for how to create a development environment,
+> this project no longer offers any particular benefit.
+
+[1]: https://craftcms.com/docs/5.x/install.html
+
 <p align="center"><a href="https://craftcms.com/" target="_blank"><img width="312" height="90" src="https://craftcms.com/craftcms.svg" alt="Craft CMS"></a></p>
 
 ## About Craft CMS
